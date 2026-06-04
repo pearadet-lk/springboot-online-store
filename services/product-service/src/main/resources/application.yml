@@ -1,0 +1,13 @@
+server:
+  port: 5225
+spring:
+  application:
+    name: product-service
+  config:
+    import: optional:classpath:application-shared.yml
+management:
+  endpoints:
+    web:
+      base-path: /
+      path-mapping:
+        prometheus: metrics

@@ -1,0 +1,13 @@
+server:
+  port: 5240
+spring:
+  application:
+    name: order-service
+  config:
+    import: optional:classpath:application-shared.yml
+management:
+  endpoints:
+    web:
+      base-path: /
+      path-mapping:
+        prometheus: metrics

@@ -1,0 +1,13 @@
+server:
+  port: 5029
+spring:
+  application:
+    name: history-service
+  config:
+    import: optional:classpath:application-shared.yml
+management:
+  endpoints:
+    web:
+      base-path: /
+      path-mapping:
+        prometheus: metrics

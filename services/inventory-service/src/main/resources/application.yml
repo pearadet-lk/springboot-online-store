@@ -1,0 +1,16 @@
+server:
+  port: 5212
+spring:
+  application:
+    name: inventory-service
+  config:
+    import: optional:classpath:application-shared.yml
+grpc:
+  server:
+    port: 5213
+management:
+  endpoints:
+    web:
+      base-path: /
+      path-mapping:
+        prometheus: metrics

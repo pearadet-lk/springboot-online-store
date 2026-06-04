@@ -1,0 +1,29 @@
+server:
+  port: 5164
+spring:
+  application:
+    name: email-service
+  config:
+    import: optional:classpath:application-shared.yml
+  kafka:
+    bootstrap-servers: ${MESSAGING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: ${MESSAGING_KAFKA_GROUP_ID:email-service}
+      enable-auto-commit: false
+      auto-offset-reset: earliest
+    listener:
+      ack-mode: manual
+messaging:
+  kafka:
+    bootstrap-servers: ${MESSAGING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    topic: email-notifications
+    group-id: email-service
+email:
+  from-address: noreply@online-store.local
+  smtp-port: 587
+management:
+  endpoints:
+    web:
+      base-path: /
+      path-mapping:
+        prometheus: metrics

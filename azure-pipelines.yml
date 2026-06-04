@@ -1,0 +1,101 @@
+trigger:
+  branches:
+    include:
+      - deploy/aks
+
+pr: none
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  imageTag: $(Build.SourceVersion)
+  namespace: online-store
+  overlay: k8s/production/overlays/aks
+
+stages:
+  - stage: BuildAndPush
+    jobs:
+      - job: BuildPush
+        steps:
+          - checkout: self
+          - task: UseDotNet@2
+            inputs:
+              packageType: sdk
+              version: 10.0.x
+          - script: dotnet restore OnlineStore.sln
+          - script: dotnet build OnlineStore.sln --configuration Release --no-restore
+          - script: dotnet test tests/Gateway.Tests/Gateway.Tests.csproj --configuration Release --no-build
+            displayName: Run gateway smoke tests
+          - script: dotnet test tests/EndToEnd.Tests/EndToEnd.Tests.csproj --configuration Release --no-build
+            displayName: Run gateway E2E contract tests
+          - task: Docker@2
+            displayName: Build and push gateway
+            inputs:
+              command: buildAndPush
+              repository: online-store-gateway
+              Dockerfile: src/Services/Gateway/Dockerfile
+              containerRegistry: $(azureContainerRegistryServiceConnection)
+              tags: |
+                $(imageTag)
+          - script: |
+              echo "Repeat Docker@2 step for all services (order/payment/product/cart/user/inventory/shipping/history)."
+            displayName: TODO all service images
+
+  - stage: DeployAKS
+    dependsOn: BuildAndPush
+    jobs:
+      - deployment: Deploy
+        environment: production
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+                - task: Kubernetes@1
+                  displayName: Apply AKS overlay
+                  inputs:
+                    connectionType: Kubernetes Service Connection
+                    kubernetesServiceEndpoint: $(aksServiceConnection)
+                    command: apply
+                    useConfigurationFile: true
+                    configurationType: inline
+                    inline: |
+                      apiVersion: v1
+                      kind: ConfigMap
+                      metadata:
+                        name: placeholder-inline
+                      data:
+                        note: "Replace this with kubectl apply -k via script step."
+                - script: |
+                    kubectl apply -k $(overlay)
+                    kubectl -n $(namespace) set image deployment/gateway gateway=$(acrLoginServer)/online-store-gateway:$(imageTag)
+                    kubectl -n $(namespace) rollout status deployment/gateway --timeout=300s
+                    kubectl -n $(namespace) port-forward svc/gateway 18080:8080 >/tmp/gateway-port-forward.log 2>&1 &
+                    PF_PID=$!
+                    trap "kill $PF_PID" EXIT
+                    sleep 5
+                    curl -fsS "http://127.0.0.1:18080/health"
+                    curl -fsS "http://127.0.0.1:18080/api/docs"
+                    PRODUCTS_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:18080/api/products")
+                    if [ "$PRODUCTS_STATUS" != "401" ]; then
+                      echo "Expected /api/products to return 401 without JWT, got $PRODUCTS_STATUS"
+                      exit 1
+                    fi
+                    LOGIN_RESPONSE=$(curl -fsS -X POST "http://127.0.0.1:18080/api/users/login" \
+                      -H "Content-Type: application/json" \
+                      -d '{"email":"demo@example.com","password":"demo-password"}')
+                    ACCESS_TOKEN=$(python3 -c 'import json,sys;print(json.loads(sys.stdin.read()).get("accessToken",""))' <<<"$LOGIN_RESPONSE")
+                    if [ -z "$ACCESS_TOKEN" ]; then
+                      echo "Failed to obtain access token from gateway login response."
+                      exit 1
+                    fi
+                    AUTH_PRODUCTS_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+                      -H "Authorization: Bearer $ACCESS_TOKEN" \
+                      "http://127.0.0.1:18080/api/products")
+                    if [ "$AUTH_PRODUCTS_STATUS" != "200" ]; then
+                      echo "Expected /api/products to return 200 with JWT, got $AUTH_PRODUCTS_STATUS"
+                      exit 1
+                    fi
+                    kill $PF_PID
+                  displayName: Apply kustomize and update image

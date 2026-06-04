@@ -1,0 +1,603 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: online-store
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: observability-config
+  namespace: online-store
+data:
+  SERVER_PORT: "8080"
+  Observability__OtlpEndpoint: http://jaeger:4317
+  Observability__ZipkinEndpoint: http://zipkin:9411/api/v2/spans
+  Observability__ElasticsearchUrl: http://elasticsearch:9200
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: java-services-config
+  namespace: online-store
+data:
+  SPRING_PROFILES_ACTIVE: postgres
+  SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/onlinestore
+  SPRING_DATASOURCE_USERNAME: onlinestore
+  SPRING_DATASOURCE_PASSWORD: onlinestore
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gateway-config
+  namespace: online-store
+data:
+  SERVER_PORT: "8080"
+  USER_SERVICE_URL: http://user-service:8080
+  PRODUCT_SERVICE_URL: http://product-service:8080
+  ORDER_SERVICE_URL: http://order-service:8080
+  PAYMENT_SERVICE_URL: http://payment-service:8080
+  CART_SERVICE_URL: http://cart-service:8080
+  INVENTORY_SERVICE_URL: http://inventory-service:8080
+  SHIPPING_SERVICE_URL: http://shipping-service:8080
+  HISTORY_SERVICE_URL: http://history-service:8080
+  EMAIL_SERVICE_URL: http://email-service:8080
+  AUTH_JWT_ISSUER: online-store
+  AUTH_JWT_AUDIENCE: online-store-clients
+  AUTH_JWT_SIGNING_KEY: dev-super-secret-signing-key-min-32-chars
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: email-service-config
+  namespace: online-store
+data:
+  SERVER_PORT: "8080"
+  MESSAGING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+  MESSAGING_KAFKA_GROUP_ID: email-service-group
+  MESSAGING_KAFKA_TOPIC: email-notifications
+  SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway
+  namespace: online-store
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gateway
+  template:
+    metadata:
+      labels:
+        app: gateway
+    spec:
+      containers:
+        - name: gateway
+          image: java-online-store/gateway:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: gateway-config
+            - configMapRef:
+                name: observability-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway
+  namespace: online-store
+spec:
+  type: NodePort
+  selector:
+    app: gateway
+  ports:
+    - port: 8080
+      targetPort: 8080
+      nodePort: 30081
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product-service
+  namespace: online-store
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: product-service
+  template:
+    metadata:
+      labels:
+        app: product-service
+    spec:
+      containers:
+        - name: product-service
+          image: java-online-store/product-service:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SERVER_PORT
+              value: "8080"
+          envFrom:
+            - configMapRef:
+                name: java-services-config
+            - configMapRef:
+                name: observability-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: product-service
+  namespace: online-store
+spec:
+  selector:
+    app: product-service
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: online-store
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: onlinestore
+            - name: POSTGRES_USER
+              value: onlinestore
+            - name: POSTGRES_PASSWORD
+              value: onlinestore
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: online-store
+spec:
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cart-service
+  namespace: online-store
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cart-service
+  template:
+    metadata:
+      labels:
+        app: cart-service
+    spec:
+      containers:
+        - name: cart-service
+          image: java-online-store/cart-service:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: observability-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cart-service
+  namespace: online-store
+spec:
+  selector:
+    app: cart-service
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-service
+  namespace: online-store
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: order-service
+  template:
+    metadata:
+      labels:
+        app: order-service
+    spec:
+      containers:
+        - name: order-service
+          image: java-online-store/order-service:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: observability-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-service
+  namespace: online-store
+spec:
+  selector:
+    app: order-service
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-service
+  namespace: online-store
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: payment-service
+  template:
+    metadata:
+      labels:
+        app: payment-service
+    spec:
+      containers:
+        - name: payment-service
+          image: java-online-store/payment-service:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: observability-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-service
+  namespace: online-store
+spec:
+  selector:
+    app: payment-service
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service
+  namespace: online-store
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: user-service
+  template:
+    metadata:
+      labels:
+        app: user-service
+    spec:
+      containers:
+        - name: user-service
+          image: java-online-store/user-service:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SERVER_PORT
+              value: "8080"
+            - name: AUTH_JWT_ISSUER
+              valueFrom:
+                configMapKeyRef:
+                  name: gateway-config
+                  key: AUTH_JWT_ISSUER
+            - name: AUTH_JWT_AUDIENCE
+              valueFrom:
+                configMapKeyRef:
+                  name: gateway-config
+                  key: AUTH_JWT_AUDIENCE
+            - name: AUTH_JWT_SIGNING_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: gateway-config
+                  key: AUTH_JWT_SIGNING_KEY
+          envFrom:
+            - configMapRef:
+                name: java-services-config
+            - configMapRef:
+                name: observability-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-service
+  namespace: online-store
+spec:
+  selector:
+    app: user-service
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inventory-service
+  namespace: online-store
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: inventory-service
+  template:
+    metadata:
+      labels:
+        app: inventory-service
+    spec:
+      containers:
+        - name: inventory-service
+          image: java-online-store/inventory-service:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+            - containerPort: 5213
+          env:
+            - name: SERVER_PORT
+              value: "8080"
+            - name: GRPC_SERVER_PORT
+              value: "5213"
+          envFrom:
+            - configMapRef:
+                name: observability-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: inventory-service
+  namespace: online-store
+spec:
+  selector:
+    app: inventory-service
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+    - name: grpc
+      port: 5213
+      targetPort: 5213
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka
+  namespace: online-store
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka
+  template:
+    metadata:
+      labels:
+        app: kafka
+    spec:
+      containers:
+        - name: kafka
+          image: bitnami/kafka:3.8
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 9092
+          env:
+            - name: KAFKA_CFG_NODE_ID
+              value: "1"
+            - name: KAFKA_CFG_PROCESS_ROLES
+              value: broker,controller
+            - name: KAFKA_CFG_CONTROLLER_QUORUM_VOTERS
+              value: 1@kafka:9093
+            - name: KAFKA_CFG_LISTENERS
+              value: PLAINTEXT://:9092,CONTROLLER://:9093
+            - name: KAFKA_CFG_ADVERTISED_LISTENERS
+              value: PLAINTEXT://kafka:9092
+            - name: KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP
+              value: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+            - name: KAFKA_CFG_CONTROLLER_LISTENER_NAMES
+              value: CONTROLLER
+            - name: KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR
+              value: "1"
+            - name: KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR
+              value: "1"
+            - name: KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR
+              value: "1"
+            - name: KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE
+              value: "true"
+            - name: KAFKA_KRAFT_CLUSTER_ID
+              value: MkU3OEVBNTcwNTJENDM2Qk
+            - name: ALLOW_PLAINTEXT_LISTENER
+              value: "yes"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka
+  namespace: online-store
+spec:
+  selector:
+    app: kafka
+  ports:
+    - port: 9092
+      targetPort: 9092
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: email-service
+  namespace: online-store
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: email-service
+  template:
+    metadata:
+      labels:
+        app: email-service
+    spec:
+      containers:
+        - name: email-service
+          image: java-online-store/email-service:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: email-service-config
+            - configMapRef:
+                name: observability-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: email-service
+  namespace: online-store
+spec:
+  selector:
+    app: email-service
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shipping-service
+  namespace: online-store
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: shipping-service
+  template:
+    metadata:
+      labels:
+        app: shipping-service
+    spec:
+      containers:
+        - name: shipping-service
+          image: java-online-store/shipping-service:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: observability-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: shipping-service
+  namespace: online-store
+spec:
+  selector:
+    app: shipping-service
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: history-service
+  namespace: online-store
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: history-service
+  template:
+    metadata:
+      labels:
+        app: history-service
+    spec:
+      containers:
+        - name: history-service
+          image: java-online-store/history-service:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: observability-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: history-service
+  namespace: online-store
+spec:
+  selector:
+    app: history-service
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: online-store
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          ports:
+            - containerPort: 6379
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: online-store
+spec:
+  selector:
+    app: redis
+  ports:
+    - port: 6379
+      targetPort: 6379

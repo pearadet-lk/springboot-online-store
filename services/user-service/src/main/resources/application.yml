@@ -1,0 +1,22 @@
+server:
+  port: 5121
+
+spring:
+  application:
+    name: user-service
+  config:
+    import: optional:classpath:application-shared.yml
+
+auth:
+  jwt-issuer: online-store
+  jwt-audience: online-store-clients
+  jwt-signing-key: dev-super-secret-signing-key-min-32-chars
+  access-token-minutes: 15
+  refresh-token-days: 7
+
+management:
+  endpoints:
+    web:
+      base-path: /
+      path-mapping:
+        prometheus: metrics

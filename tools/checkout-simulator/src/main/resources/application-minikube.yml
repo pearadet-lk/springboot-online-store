@@ -1,0 +1,13 @@
+gateway:
+  base-url: http://localhost:5152/
+
+messaging:
+  kafka:
+    bootstrap-servers: localhost:9092
+
+simulator:
+  publish-kafka: true
+
+spring:
+  kafka:
+    bootstrap-servers: localhost:9092

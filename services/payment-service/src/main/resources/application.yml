@@ -1,0 +1,15 @@
+server:
+  port: 5031
+spring:
+  application:
+    name: payment-service
+  config:
+    import: optional:classpath:application-shared.yml
+stripe:
+  secret-key: ${STRIPE_SECRET_KEY:}
+management:
+  endpoints:
+    web:
+      base-path: /
+      path-mapping:
+        prometheus: metrics

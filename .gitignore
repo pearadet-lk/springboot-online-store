@@ -1,0 +1,13 @@
+target/
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+.vscode/
+*.log
+.env
+.port-forward/
+node_modules/
+dist/
+.DS_Store

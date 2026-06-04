@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: online-store-config
+data:
+  ASPNETCORE_ENVIRONMENT: Production
+  Observability__OtlpEndpoint: http://jaeger:4317
+  Observability__ZipkinEndpoint: http://zipkin:9411/api/v2/spans
+  Observability__ElasticsearchUrl: http://elasticsearch:9200
+  Auth__JwtIssuer: online-store
+  Auth__JwtAudience: online-store-clients
+  Auth__RefreshTokenDays: "7"
+  ReverseProxy__Clusters__userCluster__Destinations__d1__Address: http://user-service:8080/
+  ReverseProxy__Clusters__productCluster__Destinations__d1__Address: http://product-service:8080/
+  ReverseProxy__Clusters__orderCluster__Destinations__d1__Address: http://order-service:8080/
+  ReverseProxy__Clusters__paymentCluster__Destinations__d1__Address: http://payment-service:8080/
+  ReverseProxy__Clusters__cartCluster__Destinations__d1__Address: http://cart-service:8080/
+  ReverseProxy__Clusters__inventoryCluster__Destinations__d1__Address: http://inventory-service:8080/
+  ReverseProxy__Clusters__shippingCluster__Destinations__d1__Address: http://shipping-service:8080/
+  ReverseProxy__Clusters__historyCluster__Destinations__d1__Address: http://history-service:8080/
+  ReverseProxy__Clusters__emailCluster__Destinations__d1__Address: http://email-service:8080/

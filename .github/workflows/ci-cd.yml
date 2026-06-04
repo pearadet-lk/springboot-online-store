@@ -1,0 +1,80 @@
+name: ci-cd
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  backend-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Build and verify (includes integration tests)
+        run: mvn -B verify
+
+  frontend-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run React frontend tests
+        working-directory: src/frontend/react
+        run: |
+          npm ci
+          npm test
+
+      - name: Run Vue frontend tests
+        working-directory: src/frontend/vue
+        run: |
+          npm ci
+          npm test
+
+      - name: Run Angular frontend tests
+        working-directory: src/frontend/angular
+        run: |
+          npm ci
+          npm test -- --watch=false --browsers=ChromeHeadless
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: [backend-build, frontend-tests]
+    strategy:
+      matrix:
+        service:
+          - gateway
+          - user-service
+          - product-service
+          - cart-service
+          - order-service
+          - payment-service
+          - inventory-service
+          - shipping-service
+          - history-service
+          - email-service
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build ${{ matrix.service }} image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.service
+          build-args: SERVICE=${{ matrix.service }}
+          push: false
+          tags: java-online-store/${{ matrix.service }}:ci

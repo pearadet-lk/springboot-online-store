@@ -1,0 +1,19 @@
+spring:
+  application:
+    name: checkout-simulator
+  main:
+    web-application-type: none
+  kafka:
+    bootstrap-servers: ${MESSAGING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      acks: 1
+
+gateway:
+  base-url: ${GATEWAY_BASE_URL:http://localhost:8081/}
+
+messaging:
+  kafka:
+    topic: email-notifications
+
+simulator:
+  publish-kafka: ${SIMULATOR_PUBLISH_KAFKA:true}

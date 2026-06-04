@@ -1,0 +1,101 @@
+server:
+  port: 5152
+
+spring:
+  application:
+    name: gateway
+  cloud:
+    gateway:
+      routes:
+        - id: user-login
+          uri: ${USER_SERVICE_URL:http://localhost:5121}
+          predicates:
+            - Path=/api/users/login
+          filters:
+            - StripPrefix=1
+        - id: user-register
+          uri: ${USER_SERVICE_URL:http://localhost:5121}
+          predicates:
+            - Path=/api/users/register
+          filters:
+            - StripPrefix=1
+        - id: user-refresh
+          uri: ${USER_SERVICE_URL:http://localhost:5121}
+          predicates:
+            - Path=/api/users/refresh
+          filters:
+            - StripPrefix=1
+        - id: user-protected
+          uri: ${USER_SERVICE_URL:http://localhost:5121}
+          predicates:
+            - Path=/api/users/**
+          filters:
+            - StripPrefix=1
+        - id: products
+          uri: ${PRODUCT_SERVICE_URL:http://localhost:5225}
+          predicates:
+            - Path=/api/products/**
+          filters:
+            - StripPrefix=1
+        - id: admin-products
+          uri: ${PRODUCT_SERVICE_URL:http://localhost:5225}
+          predicates:
+            - Path=/api/admin/products/**
+          filters:
+            - StripPrefix=1
+        - id: orders
+          uri: ${ORDER_SERVICE_URL:http://localhost:5240}
+          predicates:
+            - Path=/api/orders/**
+          filters:
+            - StripPrefix=1
+        - id: payments
+          uri: ${PAYMENT_SERVICE_URL:http://localhost:5031}
+          predicates:
+            - Path=/api/payments/**
+          filters:
+            - StripPrefix=1
+        - id: carts
+          uri: ${CART_SERVICE_URL:http://localhost:5078}
+          predicates:
+            - Path=/api/carts/**
+          filters:
+            - StripPrefix=1
+        - id: inventory
+          uri: ${INVENTORY_SERVICE_URL:http://localhost:5212}
+          predicates:
+            - Path=/api/inventory/**
+          filters:
+            - StripPrefix=1
+        - id: shipments
+          uri: ${SHIPPING_SERVICE_URL:http://localhost:5219}
+          predicates:
+            - Path=/api/shipments/**
+          filters:
+            - StripPrefix=1
+        - id: history
+          uri: ${HISTORY_SERVICE_URL:http://localhost:5029}
+          predicates:
+            - Path=/api/history/**
+          filters:
+            - StripPrefix=1
+        - id: email
+          uri: ${EMAIL_SERVICE_URL:http://localhost:5164}
+          predicates:
+            - Path=/api/email/**
+          filters:
+            - StripPrefix=1
+
+auth:
+  jwt-issuer: online-store
+  jwt-audience: online-store-clients
+  jwt-signing-key: dev-super-secret-signing-key-min-32-chars
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
+      base-path: /
+      path-mapping:
+        prometheus: metrics

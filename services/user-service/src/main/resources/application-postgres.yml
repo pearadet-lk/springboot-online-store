@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/onlinestore}
+    username: ${SPRING_DATASOURCE_USERNAME:onlinestore}
+    password: ${SPRING_DATASOURCE_PASSWORD:onlinestore}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: user_service
+    open-in-view: false
+  flyway:
+    enabled: true
+    schemas: user_service
+    default-schema: user_service
+    locations: classpath:db/migration
