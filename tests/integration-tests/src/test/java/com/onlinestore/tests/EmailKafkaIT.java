@@ -31,7 +31,7 @@ import static org.awaitility.Awaitility.await;
 class EmailKafkaIT {
 
     @Container
-    static final KafkaContainer KAFKA = new KafkaContainer(DockerImageName.parse("bitnami/kafka:3.8"));
+    static final KafkaContainer KAFKA = new KafkaContainer(DockerImageName.parse("bitnamilegacy/kafka:3.8.1-debian-12-r0"));
 
     @DynamicPropertySource
     static void kafkaProps(DynamicPropertyRegistry registry) {

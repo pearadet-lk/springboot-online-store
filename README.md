@@ -93,13 +93,77 @@ Docker Desktop Kubernetes: `.\scripts\deploy-dockerdesktop-k8s.ps1` (same manife
 
 Images: `java-online-store/*:local`. Spring env vars are in `k8s/minikube-all-in-one.yaml` (`gateway-config`, `java-services-config`).
 
-## Frontends
+## Frontends (React, Angular, Vue)
 
-- React: `src/frontend/react`
-- Angular: `src/frontend/angular`
-- Vue: `src/frontend/vue`
+Frontends are **not** included in Docker Compose or Kubernetes — run them on your host while the backend is up.
 
-Dev proxies target gateway `5152` (Maven) or `8081` (Docker).
+**Prerequisites:** Node.js 20+ and npm. Start the gateway first:
+
+| Backend | Gateway URL |
+|---------|-------------|
+| Maven (`mvn -pl services/gateway spring-boot:run`) | `http://localhost:5152` |
+| Docker Compose (`docker compose up -d`) | `http://localhost:8081` |
+| Minikube (after port-forward) | `http://localhost:5152` |
+
+Dev servers proxy `/api` and `/health` to the gateway so the UI can call the API without CORS issues.
+
+### React (`src/frontend/react`)
+
+```powershell
+cd src/frontend/react
+npm install
+npm run dev
+```
+
+Open **`https://localhost:5173`** (Vite uses a local HTTPS cert).
+
+Point at Docker gateway:
+
+```powershell
+$env:VITE_GATEWAY_TARGET = "http://localhost:8081"
+npm run dev
+```
+
+### Angular (`src/frontend/angular`)
+
+```powershell
+cd src/frontend/angular
+npm install
+npm start
+```
+
+Open **`http://localhost:4200`**. `npm start` runs `ng serve` with `proxy.conf.json` (default target: `http://localhost:5152`).
+
+For Docker, change both `target` values in `src/frontend/angular/proxy.conf.json` to `http://localhost:8081`, then restart `npm start`.
+
+### Vue (`src/frontend/vue`)
+
+```powershell
+cd src/frontend/vue
+npm install
+npm run dev
+```
+
+Open **`http://localhost:5173`** (Vite picks the next free port if React is already using `5173`).
+
+Point at Docker gateway:
+
+```powershell
+$env:VITE_GATEWAY_TARGET = "http://localhost:8081"
+npm run dev
+```
+
+### Run all three at once
+
+Use separate terminals (one per app). Default dev URLs:
+
+| App | URL | Gateway config |
+|-----|-----|----------------|
+| React | `https://localhost:5173` | `VITE_GATEWAY_TARGET` env var |
+| Angular | `http://localhost:4200` | `proxy.conf.json` |
+| Vue | `http://localhost:5173` or `5174` | `VITE_GATEWAY_TARGET` env var |
+
+**Note:** `POST /api/checkout` is not implemented on the gateway (same as the .NET reference). Checkout from the UI returns 404; use `tools/checkout-simulator` for an end-to-end checkout flow.
 
 ## Kafka email flow
 

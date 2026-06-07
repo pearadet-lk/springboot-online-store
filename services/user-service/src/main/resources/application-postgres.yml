@@ -12,6 +12,7 @@ spring:
     open-in-view: false
   flyway:
     enabled: true
+    baseline-on-migrate: true
     schemas: user_service
     default-schema: user_service
     locations: classpath:db/migration

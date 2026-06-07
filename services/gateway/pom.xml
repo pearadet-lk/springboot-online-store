@@ -31,6 +31,11 @@
             <groupId>com.onlinestore</groupId>
             <artifactId>contracts</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-netty</artifactId>
+            <version>${grpc.version}</version>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

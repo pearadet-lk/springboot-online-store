@@ -5,7 +5,7 @@ option java_multiple_files = true;
 
 package inventory;
 
-service InventoryGrpc {
+service Inventory {
   rpc Check (InventoryOperationRequest) returns (InventoryOperationReply);
   rpc Reserve (InventoryOperationRequest) returns (InventoryOperationReply);
   rpc Release (InventoryOperationRequest) returns (InventoryOperationReply);

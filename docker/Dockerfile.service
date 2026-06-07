@@ -6,6 +6,7 @@ COPY pom.xml .
 COPY building-blocks ./building-blocks
 COPY services ./services
 COPY tools ./tools
+COPY tests/integration-tests ./tests/integration-tests
 RUN mvn -pl services/${SERVICE} -am package -DskipTests -q
 
 FROM eclipse-temurin:21-jre
@@ -13,4 +14,4 @@ ARG SERVICE=gateway
 WORKDIR /app
 COPY --from=build /workspace/services/${SERVICE}/target/*-SNAPSHOT-exec.jar app.jar
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "/app.jar"]
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]
