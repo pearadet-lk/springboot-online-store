@@ -182,7 +182,7 @@ mvn verify
 
 ## Architecture parity (.NET reference vs Java)
 
-Comparison with [online-store](D:\MyGitHubProject\online-store) (.NET) and this repo.
+Comparison with [online-store](your-local-folder-path\online-store) (.NET) and this repo.
 
 | Concern | .NET (`online-store`) | Java (`java-online-store`) | Match |
 |---------|----------------------|----------------------------|-------|
